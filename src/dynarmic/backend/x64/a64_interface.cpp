@@ -269,9 +269,12 @@ private:
         block_of_code.EnsureMemoryCommitted(MINIMUM_REMAINING_CODESIZE);
 
         // JIT Compile
+        conf.callbacks->CompileBegin();
+        SCOPE_EXIT {
+            conf.callbacks->CompileEnd();
+        };
         const auto get_code = [this](u64 vaddr) { return conf.callbacks->MemoryReadCode(vaddr); };
-        IR::Block ir_block = A64::Translate(A64::LocationDescriptor{current_location}, get_code,
-                                            {conf.define_unpredictable_behaviour, conf.wall_clock_cntpct});
+        IR::Block ir_block = A64::Translate(A64::LocationDescriptor{current_location}, get_code, {conf.define_unpredictable_behaviour, conf.wall_clock_cntpct});
         Optimization::PolyfillPass(ir_block, polyfill_options);
         Optimization::A64CallbackConfigPass(ir_block, conf);
         Optimization::NamingPass(ir_block);
